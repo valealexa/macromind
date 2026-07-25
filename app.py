@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 MACROMIND — Web App Streamlit
-Interfaccia Grafica Premium + Ricette Uniche + Istruzioni di Preparazione + PWA/iOS
+Versione Full: Allergie + Cambio Singolo Piatto + Sostituzione Ingredienti + Salvataggio + PWA
 """
 
 import streamlit as st
@@ -10,7 +10,7 @@ import json
 import os
 
 # ============================================================
-# 0. CONFIGURAZIONE PAGINA
+# 0. CONFIGURAZIONE PAGINA E PWA
 # ============================================================
 st.set_page_config(
     page_title="MacroMind",
@@ -50,7 +50,7 @@ def carica_dati_locali():
     return None
 
 # ============================================================
-# 1. STILE CSS CUSTOM
+# 1. CSS CUSTOM E STILIZZAZIONE
 # ============================================================
 st.markdown("""
 <style>
@@ -69,7 +69,7 @@ h1 {
     background-color: #ffffff;
     border-radius: 16px;
     padding: 20px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     border: 1px solid #eef2f5;
 }
@@ -110,95 +110,93 @@ div[data-testid="stFormSubmitButton"] > button {
 """, unsafe_allow_html=True)
 
 # ============================================================
-# 2. DATABASE ALIMENTI E RICETTE CON ISTRUZIONI
+# 2. DATABASE ALIMENTI E RICETTE CON ALLERGENI
 # ============================================================
 FOODS = {
-    "Fiocchi d'avena":              {"kcal":389,"prot":16.9,"carb":66.3,"fat":6.9},
-    "Latte parzialmente scremato":  {"kcal":46, "prot":3.3, "carb":4.8, "fat":1.5},
-    "Latte di soia":                {"kcal":33, "prot":3.3, "carb":1.8, "fat":1.8},
-    "Mirtilli":                     {"kcal":57, "prot":0.7, "carb":14.0,"fat":0.3},
-    "Miele":                        {"kcal":304,"prot":0.3, "carb":82.4,"fat":0.0},
-    "Uova":                         {"kcal":155,"prot":12.6,"carb":1.1, "fat":10.6},
-    "Pane integrale":               {"kcal":247,"prot":9.0, "carb":41.0,"fat":3.5},
-    "Avocado":                      {"kcal":160,"prot":2.0, "carb":8.5, "fat":14.7},
-    "Petto di pollo":               {"kcal":165,"prot":31.0,"carb":0.0, "fat":3.6},
-    "Tacchino fette":               {"kcal":104,"prot":22.0,"carb":1.0, "fat":1.0},
-    "Salmone":                      {"kcal":208,"prot":20.0,"carb":0.0, "fat":13.0},
-    "Merluzzo":                     {"kcal":82, "prot":18.0,"carb":0.0, "fat":0.7},
-    "Tofu":                         {"kcal":76, "prot":8.0, "carb":1.9, "fat":4.8},
-    "Riso basmati (crudo)":         {"kcal":349,"prot":7.5, "carb":77.0,"fat":0.9},
-    "Farro (crudo)":                {"kcal":335,"prot":15.0,"carb":67.0,"fat":2.5},
-    "Quinoa (cruda)":               {"kcal":368,"prot":14.0,"carb":64.0,"fat":6.0},
-    "Patate":                       {"kcal":77, "prot":2.0, "carb":17.0,"fat":0.1},
-    "Broccoli":                     {"kcal":34, "prot":2.8, "carb":7.0, "fat":0.4},
-    "Zucchine":                     {"kcal":17, "prot":1.2, "carb":3.1, "fat":0.2},
-    "Spinaci":                      {"kcal":23, "prot":2.9, "carb":3.6, "fat":0.4},
-    "Olio EVO":                     {"kcal":884,"prot":0.0, "carb":0.0, "fat":100.0},
-    "Yogurt greco":                 {"kcal":59, "prot":10.0,"carb":3.6, "fat":0.4},
-    "Mandorle":                     {"kcal":579,"prot":21.0,"carb":22.0,"fat":50.0},
-    "Noci":                         {"kcal":654,"prot":15.0,"carb":14.0,"fat":65.0},
-    "Mela":                         {"kcal":52, "prot":0.3, "carb":14.0,"fat":0.2},
+    "Fiocchi d'avena":              {"kcal":389,"prot":16.9,"carb":66.3,"fat":6.9, "cat":"Cereali"},
+    "Latte parzialmente scremato":  {"kcal":46, "prot":3.3, "carb":4.8, "fat":1.5, "cat":"Latticini"},
+    "Latte di soia":                {"kcal":33, "prot":3.3, "carb":1.8, "fat":1.8, "cat":"Latticini"},
+    "Mirtilli":                     {"kcal":57, "prot":0.7, "carb":14.0,"fat":0.3, "cat":"Frutta"},
+    "Miele":                        {"kcal":304,"prot":0.3, "carb":82.4,"fat":0.0, "cat":"Dolcificanti"},
+    "Uova":                         {"kcal":155,"prot":12.6,"carb":1.1, "fat":10.6,"cat":"Proteine"},
+    "Pane integrale":               {"kcal":247,"prot":9.0, "carb":41.0,"fat":3.5, "cat":"Cereali"},
+    "Avocado":                      {"kcal":160,"prot":2.0, "carb":8.5, "fat":14.7,"cat":"Grassi"},
+    "Petto di pollo":               {"kcal":165,"prot":31.0,"carb":0.0, "fat":3.6, "cat":"Proteine"},
+    "Tacchino fette":               {"kcal":104,"prot":22.0,"carb":1.0, "fat":1.0, "cat":"Proteine"},
+    "Salmone":                      {"kcal":208,"prot":20.0,"carb":0.0, "fat":13.0,"cat":"Proteine"},
+    "Merluzzo":                     {"kcal":82, "prot":18.0,"carb":0.0, "fat":0.7, "cat":"Proteine"},
+    "Tofu":                         {"kcal":76, "prot":8.0, "carb":1.9, "fat":4.8, "cat":"Proteine"},
+    "Riso basmati (crudo)":         {"kcal":349,"prot":7.5, "carb":77.0,"fat":0.9, "cat":"Cereali"},
+    "Farro (crudo)":                {"kcal":335,"prot":15.0,"carb":67.0,"fat":2.5, "cat":"Cereali"},
+    "Quinoa (cruda)":               {"kcal":368,"prot":14.0,"carb":64.0,"fat":6.0, "cat":"Cereali"},
+    "Patate":                       {"kcal":77, "prot":2.0, "carb":17.0,"fat":0.1, "cat":"Verdura"},
+    "Broccoli":                     {"kcal":34, "prot":2.8, "carb":7.0, "fat":0.4, "cat":"Verdura"},
+    "Zucchine":                     {"kcal":17, "prot":1.2, "carb":3.1, "fat":0.2, "cat":"Verdura"},
+    "Spinaci":                      {"kcal":23, "prot":2.9, "carb":3.6, "fat":0.4, "cat":"Verdura"},
+    "Olio EVO":                     {"kcal":884,"prot":0.0, "carb":0.0, "fat":100.0,"cat":"Grassi"},
+    "Yogurt greco":                 {"kcal":59, "prot":10.0,"carb":3.6, "fat":0.4, "cat":"Latticini"},
+    "Mandorle":                     {"kcal":579,"prot":21.0,"carb":22.0,"fat":50.0,"cat":"Frutta a guscio"},
+    "Noci":                         {"kcal":654,"prot":15.0,"carb":14.0,"fat":65.0,"cat":"Frutta a guscio"},
+    "Mela":                         {"kcal":52, "prot":0.3, "carb":14.0,"fat":0.2, "cat":"Frutta"},
 }
+
+ALLERGENI_DISPONIBILI = ["Lattosio", "Glutine", "Frutta a guscio", "Uova"]
 
 RICETTE_COLAZIONE = [
     {
         "nome": "Porridge d'avena ai frutti di bosco",
         "diete": ["Onnivoro", "Vegetariano", "Pescetariano"],
+        "allergeni": ["Lattosio", "Glutine"],
         "ingredienti": [("Fiocchi d'avena", 50), ("Latte parzialmente scremato", 200), ("Mirtilli", 60), ("Miele", 10)],
-        "tempo": 8,
-        "nota": "Ricco di fibre e beta-glucani.",
-        "istruzioni": "Cuoci i fiocchi d'avena con il latte a fuoco lento per circa 5 minuti mescolando. Versa in una ciotola e completa con i mirtilli freschi e un filo di miele."
+        "tempo": 8, "nota": "Ricco di fibre e beta-glucani.",
+        "istruzioni": "Cuoci i fiocchi d'avena con il latte a fuoco lento per 5 minuti. Versa in ciotola e completa con mirtilli e miele."
     },
     {
         "nome": "Yogurt greco bowls con mela e mandorle",
         "diete": ["Onnivoro", "Vegetariano", "Pescetariano"],
+        "allergeni": ["Lattosio", "Frutta a guscio"],
         "ingredienti": [("Yogurt greco", 200), ("Mandorle", 20), ("Miele", 10), ("Mela", 100)],
-        "tempo": 5,
-        "nota": "Colazione ad alto contenuto proteico.",
-        "istruzioni": "Adagia lo yogurt greco sul fondo di una ciotola. Taglia la mela a cubetti, trita le mandorle e disponile sopra. Rifinisci con il miele."
+        "tempo": 5, "nota": "Colazione ad alto contenuto proteico.",
+        "istruzioni": "Versa lo yogurt in una ciotola. Aggiungi la mela a cubetti, le mandorle tritate e rifinisci con il miele."
     },
     {
         "nome": "Toast integrale avocado e uovo al tegamino",
         "diete": ["Onnivoro", "Vegetariano", "Pescetariano"],
+        "allergeni": ["Glutine", "Uova"],
         "ingredienti": [("Pane integrale", 60), ("Avocado", 60), ("Uova", 50)],
-        "tempo": 10,
-        "nota": "Grassi sani a lenta digestione.",
-        "istruzioni": "Tosta le fette di pane. Schiaccia la polpa dell'avocado con una forchetta e spalmala sul pane. Cuoci l'uovo in padella antiaderente e appoggialo sul toast."
+        "tempo": 10, "nota": "Grassi sani a lenta digestione.",
+        "istruzioni": "Tosta il pane, schiaccia l'avocado sopra con una forchetta e adagia l'uovo cucinato al tegamino."
     },
 ]
 
 RICETTE_PRINCIPALI = [
     {
         "nome": "Petto di pollo con riso basmati e broccoli",
-        "diete": ["Onnivoro"],
+        "diete": ["Onnivoro"], "allergeni": [],
         "ingredienti": [("Petto di pollo", 150), ("Riso basmati (crudo)", 70), ("Broccoli", 200), ("Olio EVO", 10)],
-        "tempo": 25,
-        "nota": "Pasto classico per la ricomposizione corporea.",
-        "istruzioni": "Lessa il riso e i broccoli (al vapore o in acqua bollente). Griglia il pollo in padella calda con spezie a piacere. Impiatta tutto e condisci a crudo con l'olio EVO."
+        "tempo": 25, "nota": "Pasto classico per la ricomposizione corporea.",
+        "istruzioni": "Lessa il riso e i broccoli. Griglia il pollo in padella. Impiatta e condisci con olio EVO a crudo."
     },
     {
         "nome": "Salmone al forno con patate e zucchine",
-        "diete": ["Onnivoro", "Pescetariano"],
+        "diete": ["Onnivoro", "Pescetariano"], "allergeni": [],
         "ingredienti": [("Salmone", 150), ("Patate", 200), ("Zucchine", 150), ("Olio EVO", 10)],
-        "tempo": 25,
-        "nota": "Fonte eccellente di Omega-3.",
-        "istruzioni": "Taglia le patate e le zucchine a tocchetti, condiscile con metà olio ed erbe e inforna a 200°C per 15 min. Aggiungi il filetto di salmone e cuoci per altri 10-12 min."
+        "tempo": 25, "nota": "Fonte eccellente di Omega-3.",
+        "istruzioni": "Inforna patate e zucchine a 200°C per 15 min. Aggiungi il salmone e cuoci per altri 10-12 min."
     },
     {
         "nome": "Tofu croccante al salto con riso e zucchine",
-        "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"],
+        "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
         "ingredienti": [("Tofu", 180), ("Riso basmati (crudo)", 70), ("Zucchine", 100), ("Olio EVO", 10)],
-        "tempo": 18,
-        "nota": "Proteine vegetali complete.",
-        "istruzioni": "Cuoci il riso per assorbimento. Taglia il tofu a cubetti e saltalo in padella con l'olio finché non diventa dorato. Aggiungi le zucchine a rondelle e sfuma con salsa di soia a piacere."
+        "tempo": 18, "nota": "Proteine vegetali complete.",
+        "istruzioni": "Cuoci il riso. Taglia il tofu a cubetti e rosolalo in padella con l'olio. Unisci le zucchine e sfuma a piacere."
     },
     {
         "nome": "Merluzzo al vapore con quinoa e spinaci",
-        "diete": ["Onnivoro", "Pescetariano"],
+        "diete": ["Onnivoro", "Pescetariano"], "allergeni": [],
         "ingredienti": [("Merluzzo", 180), ("Quinoa (cruda)", 70), ("Spinaci", 150), ("Olio EVO", 10)],
-        "tempo": 20,
-        "nota": "Pasto leggerissimo ed estremamente digeribile.",
-        "istruzioni": "Sciacqua la quinoa e cuocila per circa 15 min. Cuoci il merluzzo e gli spinaci al vapore per 8-10 min. Unisci il tutto e completa con l'olio EVO a crudo."
+        "tempo": 20, "nota": "Pasto leggerissimo ed estremamente digeribile.",
+        "istruzioni": "Cuoci la quinoa per 15 min. Cuoci merluzzo e spinaci al vapore per 10 min. Unisci tutto con l'olio EVO."
     }
 ]
 
@@ -206,18 +204,18 @@ RICETTE_SPUNTINO = [
     {
         "nome": "Yogurt greco con mandorle tostate",
         "diete": ["Onnivoro", "Vegetariano", "Pescetariano"],
+        "allergeni": ["Lattosio", "Frutta a guscio"],
         "ingredienti": [("Yogurt greco", 150), ("Mandorle", 15)],
-        "tempo": 2,
-        "nota": "Spuntino veloce a basso indice glicemico.",
-        "istruzioni": "Versa lo yogurt greco in una ciotolina e aggiungi le mandorle (se vuoi, tostale 2 minuti in padella per renderle più croccanti)."
+        "tempo": 2, "nota": "Spuntino veloce a basso indice glicemico.",
+        "istruzioni": "Versa lo yogurt in una ciotolina e completa con le mandorle tostate."
     },
     {
         "nome": "Crunchy snack: Mela e noci",
         "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"],
+        "allergeni": ["Frutta a guscio"],
         "ingredienti": [("Mela", 150), ("Noci", 15)],
-        "tempo": 2,
-        "nota": "Mix perfetto di fibre e grassi buoni per la concentrazione.",
-        "istruzioni": "Lava la mela, tagliala a fette sottili e consumala insieme ai gherigli di noce."
+        "tempo": 2, "nota": "Fibre e grassi buoni per la concentrazione.",
+        "istruzioni": "Taglia la mela a fette e consumala insieme ai gherigli di noce."
     },
 ]
 
@@ -231,17 +229,18 @@ ATTIVITA = {"Sedentario": 1.20, "Leggero (1-3 gg/sett)": 1.375, "Moderato (3-5 g
 OBIETTIVI = ["Mantenimento del peso", "Deficit progressivo (dimagrimento)", "Massa muscolare / Ricomposizione"]
 
 # ============================================================
-# 3. LOGICA DI CALCOLO E GENERAZIONE SENZA RIPETIZIONI
+# 3. LOGICA DI CALCOLO E FILTRAGGIO
 # ============================================================
 def totali_ingredienti(lista_ingr):
     tot = {"kcal": 0.0, "prot": 0.0, "carb": 0.0, "fat": 0.0}
     for nome, grammi in lista_ingr:
-        f = FOODS[nome]
-        fattore = grammi / 100.0
-        tot["kcal"] += f["kcal"] * fattore
-        tot["prot"] += f["prot"] * fattore
-        tot["carb"] += f["carb"] * fattore
-        tot["fat"] += f["fat"] * fattore
+        if nome in FOODS:
+            f = FOODS[nome]
+            fattore = grammi / 100.0
+            tot["kcal"] += f["kcal"] * fattore
+            tot["prot"] += f["prot"] * fattore
+            tot["carb"] += f["carb"] * fattore
+            tot["fat"] += f["fat"] * fattore
     return tot
 
 def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obiettivo):
@@ -254,18 +253,23 @@ def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obi
     carb_kcal = max(kcal - prot_kcal - fat_kcal, kcal * 0.20)
     return {"kcal": round(kcal), "prot": round(prot_g), "carb": round(carb_kcal / 4), "fat": round(fat_kcal / 9)}, round(bmr), round(tdee)
 
-def genera_pasto(pool, target_kcal, stile, ricette_usate):
-    # Filtra prima per stile alimentare
-    candidati = [r for r in pool if stile in r["diete"]]
+def estrai_ricetta_valida(pool, stile, allergie, usate):
+    candidati = []
+    for r in pool:
+        if stile in r["diete"]:
+            # Verifica allergeni
+            if not any(a in r["allergeni"] for a in allergie):
+                candidati.append(r)
+    
     if not candidati:
-        candidati = pool
-    
-    # Escludi ricette già usate nella stessa giornata se possibile
-    non_usate = [r for r in candidati if r["nome"] not in ricette_usate]
-    pool_finale = non_usate if non_usate else candidati
-    
-    ricetta = random.choice(pool_finale)
-    ricette_usate.add(ricetta["nome"]) # Registra la ricetta come usata
+        candidati = pool # Fallback se nessuna ricetta rispetta i filtri rigidi
+        
+    non_usate = [r for r in candidati if r["nome"] not in usate]
+    return random.choice(non_usate if non_usate else candidati)
+
+def genera_pasto(pool, target_kcal, stile, allergie, ricette_usate):
+    ricetta = estrai_ricetta_valida(pool, stile, allergie, ricette_usate)
+    ricette_usate.add(ricetta["nome"])
     
     base = totali_ingredienti(ricetta["ingredienti"])
     fattore = target_kcal / base["kcal"] if base["kcal"] > 0 else 1.0
@@ -280,22 +284,21 @@ def genera_pasto(pool, target_kcal, stile, ricette_usate):
         "tempo": ricetta["tempo"]
     }
 
-def genera_giornata(target_macros, n_pasti, stile, colazione_pref, max_tempo):
+def genera_giornata(target_macros, n_pasti, stile, allergie):
     distribuzione = DISTRIBUZIONE[n_pasti]
     day_plan, day_targets = {}, {}
-    ricette_usate = set() # Tiene traccia delle ricette già estratte oggi
+    ricette_usate = set()
     
     for slot, perc in distribuzione.items():
         slot_target = {k: v * perc for k, v in target_macros.items()}
         day_targets[slot] = slot_target
-        
         pool = RICETTE_COLAZIONE if "Colazione" in slot else (RICETTE_SPUNTINO if "Spuntino" in slot else RICETTE_PRINCIPALI)
-        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, ricette_usate)
+        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, allergie, ricette_usate)
         
     return day_plan, day_targets
 
 # ============================================================
-# 4. RIPRISTINO DATI SALVATI
+# 4. RIPRISTINO STATO
 # ============================================================
 if "day_plan" not in st.session_state or not st.session_state.day_plan:
     dati_salvati = carica_dati_locali()
@@ -304,16 +307,18 @@ if "day_plan" not in st.session_state or not st.session_state.day_plan:
         st.session_state.target_macros = dati_salvati.get("target_macros", None)
         st.session_state.day_targets = dati_salvati.get("day_targets", {})
         st.session_state.info_calcolo = dati_salvati.get("info_calcolo", None)
+        st.session_state.stile = dati_salvati.get("stile", "Onnivoro")
+        st.session_state.allergie = dati_salvati.get("allergie", [])
 
 # ============================================================
-# 5. INTERFACCIA UTENTE
+# 5. FORM PARAMETRI
 # ============================================================
 st.title("🏋️‍♂️ MacroMind")
 st.caption("Nutrizione Personalizzata & Calcolo Macro Automagico")
 st.divider()
 
 with st.form("form_piano"):
-    st.subheader("1️⃣ I tuoi dati fisiologici")
+    st.subheader("1️⃣ Dati Fisiologici")
     c1, c2 = st.columns(2)
     with c1:
         età = st.number_input("Età", 14, 100, 22)
@@ -325,8 +330,11 @@ with st.form("form_piano"):
         obiettivo_scelta = st.selectbox("Obiettivo", OBIETTIVI)
 
     st.divider()
-    st.subheader("2️⃣ Preferenze e Stile di vita")
+    st.subheader("2️⃣ Preferenze & Intolleranze")
     stile = st.radio("Stile alimentare", ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], horizontal=True)
+    
+    allergie = st.multiselect("⚠️ Seleziona le tue allergie/intolleranze:", ALLERGENI_DISPONIBILI)
+    
     col_a, col_b = st.columns(2)
     with col_a:
         colazione_pref = st.radio("Preferenza colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
@@ -334,30 +342,29 @@ with st.form("form_piano"):
     with col_b:
         tempo_scelto = st.select_slider("⏱️ Tempo max preparazione:", ["< 15 min", "15-30 min", "Senza limiti"], value="Senza limiti")
 
-    submitted = st.form_submit_button("🚀 GENERA PIANO SENZA RIPETIZIONI", use_container_width=True)
+    submitted = st.form_submit_button("🚀 GENERA PIANO PERSONALIZZATO", use_container_width=True)
 
 if submitted:
-    max_tempo_min = 15 if tempo_scelto == "< 15 min" else (30 if tempo_scelto == "15-30 min" else None)
     target, bmr, tdee = calcola_target_automatico(età, sesso, peso, altezza, ATTIVITA[attività_scelta], obiettivo_scelta)
-    
-    day_plan, day_targets = genera_giornata(target, n_pasti, stile, colazione_pref, max_tempo_min)
-    info_calcolo = f"🔥 Metabolismo Basale: {bmr} kcal | TDEE (Fabbisogno): {tdee} kcal"
+    day_plan, day_targets = genera_giornata(target, n_pasti, stile, allergie)
+    info_calcolo = f"🔥 BMR: {bmr} kcal | TDEE: {tdee} kcal"
 
     st.session_state.day_plan = day_plan
     st.session_state.target_macros = target
     st.session_state.day_targets = day_targets
     st.session_state.info_calcolo = info_calcolo
+    st.session_state.stile = stile
+    st.session_state.allergie = allergie
 
     salva_dati_locali({
-        "day_plan": day_plan,
-        "target_macros": target,
-        "day_targets": day_targets,
-        "info_calcolo": info_calcolo,
+        "day_plan": day_plan, "target_macros": target,
+        "day_targets": day_targets, "info_calcolo": info_calcolo,
+        "stile": stile, "allergie": allergie
     })
-    st.success("✅ Piano generato con ricette uniche e memorizzato!")
+    st.success("✅ Piano generato con successo!")
 
 # ============================================================
-# 6. VISUALIZZAZIONE RISULTATI CON PREPARAZIONE
+# 6. BOARD RISULTATI & AZIONI SUI PASTI
 # ============================================================
 if "day_plan" in st.session_state and st.session_state.day_plan:
     st.divider()
@@ -370,18 +377,18 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
         m2.metric("Proteine", f"{tm['prot']} g")
         m3.metric("Carboidrati", f"{tm['carb']} g")
         m4.metric("Grassi", f"{tm['fat']} g")
-        
-    if st.session_state.info_calcolo:
-        st.caption(st.session_state.info_calcolo)
 
     st.write("")
-    st.subheader("🍽️ Il Tuo Piano Alimentare Personalizzato")
+    st.subheader("🍽️ Il Tuo Piano Alimentare")
     
-    for slot, meal in st.session_state.day_plan.items():
+    stile_curr = st.session_state.get("stile", "Onnivoro")
+    allergie_curr = st.session_state.get("allergie", [])
+
+    for slot, meal in list(st.session_state.day_plan.items()):
         icona = ICONE_SLOT.get(slot, "🍴")
         t = meal["totali"]
         
-        # Card pasto
+        # Scheda del pasto
         st.markdown(f"""
         <div class="meal-card">
             <h3 style="margin:0 0 10px 0; color:#1a5f3f;">{icona} {slot} — {meal['nome']}</h3>
@@ -395,15 +402,66 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
         </div>
         """, unsafe_allow_html=True)
         
-        # Expanders per Ingredienti e Spiegazione
-        c_ingr, c_prep = st.columns(2)
-        with c_ingr:
-            with st.expander(f"🛒 Ingredienti per {slot}"):
-                for nome, g in meal["ingredienti"]:
-                    st.write(f"• **{nome}**: {g} g")
-        with c_prep:
-            with st.expander(f"👨‍🍳 Come si prepara"):
-                st.write(meal["istruzioni"])
+        col_actions1, col_actions2, col_actions3 = st.columns([1, 1, 1])
+        
+        # Action 1: Cambia Singolo Piatto
+        with col_actions1:
+            if st.button(f"🔄 Cambia {slot}", key=f"swap_{slot}"):
+                pool = RICETTE_COLAZIONE if "Colazione" in slot else (RICETTE_SPUNTINO if "Spuntino" in slot else RICETTE_PRINCIPALI)
+                usate = {m["nome"] for m in st.session_state.day_plan.values()}
+                target_kcal = st.session_state.day_targets[slot]["kcal"]
+                st.session_state.day_plan[slot] = genera_pasto(pool, target_kcal, stile_curr, allergie_curr, usate)
+                salva_dati_locali({
+                    "day_plan": st.session_state.day_plan, "target_macros": st.session_state.target_macros,
+                    "day_targets": st.session_state.day_targets, "info_calcolo": st.session_state.info_calcolo,
+                    "stile": stile_curr, "allergie": allergie_curr
+                })
+                st.rerun()
+
+        # Visualizzazione Espandibile: Ingredienti & Istruzioni
+        with st.expander(f"🛒 Ingredienti e Preparazione per {slot}"):
+            st.markdown("**Istruzioni:** " + meal["istruzioni"])
+            st.divider()
+            st.write("**Lista Ingredienti:**")
+            
+            # Sostituzione singoli ingredienti
+            nuova_lista = []
+            for idx, (ing_nome, ing_grammi) in enumerate(meal["ingredienti"]):
+                c_ing1, c_ing2 = st.columns([2, 2])
+                with c_ing1:
+                    st.write(f"• **{ing_nome}**: {ing_grammi} g")
+                with c_ing2:
+                    # Sostituzione dinamica alimento
+                    cat_attuale = FOODS.get(ing_nome, {}).get("cat", "")
+                    opzioni_simili = [f for f, d in FOODS.items() if d.get("cat") == cat_attuale]
+                    if not opzioni_simili:
+                        opzioni_simili = list(FOODS.keys())
+                    
+                    nuovo_ing = st.selectbox(
+                        f"Sostituisci {ing_nome}", 
+                        opzioni_simili, 
+                        index=opzioni_simili.index(ing_nome) if ing_nome in opzioni_simili else 0,
+                        key=f"sub_{slot}_{idx}"
+                    )
+                    
+                    if nuovo_ing != ing_nome:
+                        # Ricalcola i grammi per mantenere uguali le Kcal dell'ingrediente sostituito
+                        kcal_orig = (FOODS[ing_nome]["kcal"] / 100.0) * ing_grammi
+                        nuovi_g = max(round((kcal_orig / FOODS[nuovo_ing]["kcal"]) * 100.0), 1)
+                        nuova_lista.append((nuovo_ing, nuovi_g))
+                    else:
+                        nuova_lista.append((ing_nome, ing_grammi))
+            
+            # Aggiorna se un ingrediente è stato sostituito
+            if nuova_lista != meal["ingredienti"]:
+                st.session_state.day_plan[slot]["ingredienti"] = nuova_lista
+                st.session_state.day_plan[slot]["totali"] = totali_ingredienti(nuova_lista)
+                salva_dati_locali({
+                    "day_plan": st.session_state.day_plan, "target_macros": st.session_state.target_macros,
+                    "day_targets": st.session_state.day_targets, "info_calcolo": st.session_state.info_calcolo,
+                    "stile": stile_curr, "allergie": allergie_curr
+                })
+                st.rerun()
 
     st.divider()
     if st.button("🗑️ Rimuovi e Ricomincia"):
@@ -411,3 +469,4 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
             os.remove(SAVE_FILE)
         st.session_state.clear()
         st.rerun()
+        
