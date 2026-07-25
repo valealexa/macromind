@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 MACROMIND — Web App Streamlit
-Con Salvataggio Dati Persistente e Modifica Titolo iOS.
+Interfaccia Grafica Premium + Salvataggio Dati Persistente + PWA/iOS icons.
 """
 
 import streamlit as st
@@ -19,6 +19,19 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# Meta-tag per PWA / schermata Home iOS
+st.markdown("""
+    <head>
+        <title>MacroMind</title>
+        <meta name="apple-mobile-web-app-title" content="MacroMind">
+        <meta name="application-name" content="MacroMind">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <link rel="apple-touch-icon" href="https://img.icons8.com/emoji/192/dumbbell-emoji.png">
+        <link rel="icon" type="image/png" sizes="192x192" href="https://img.icons8.com/emoji/192/dumbbell-emoji.png">
+    </head>
+""", unsafe_allow_html=True)
 
 SAVE_FILE = "user_data.json"
 
@@ -39,36 +52,74 @@ def carica_dati_locali():
     return None
 
 # ============================================================
-# 1. STILE E CSS
+# 1. STILE E CSS ADVANCED (Restyling Grafico)
 # ============================================================
 st.markdown("""
 <style>
-html, body, [class*="css"]  { font-size: 19px !important; }
-h1 { font-size: 2.3rem !important; font-weight: 800 !important; color: #1a5f3f; }
-h2 { font-size: 1.7rem !important; font-weight: 800 !important; color: #2e4053; }
-p, li, label, span { font-size: 1.02rem !important; }
+/* Font generale e responsive */
+html, body, [class*="css"] {
+    font-size: 18px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
 
-.stButton > button {
-    font-size: 1.1rem !important;
-    font-weight: 700 !important;
-    padding: 0.75rem 1.4rem !important;
-    border-radius: 12px !important;
-    border: 2px solid #1a5f3f !important;
+/* Header personalizzato */
+h1 {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
     color: #1a5f3f !important;
-    background-color: #ffffff !important;
-    width: 100%;
-}
-.stButton > button:hover {
-    background-color: #1a5f3f !important;
-    color: #ffffff !important;
+    margin-bottom: 0px !important;
 }
 
+/* Card per i pasti */
+.meal-card {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #eef2f5;
+}
+
+/* Badge Macro e Kcal */
+.macro-badge {
+    background-color: #f4f8f5;
+    color: #1a5f3f;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: inline-block;
+    margin-right: 8px;
+    margin-top: 8px;
+}
+
+.macro-kcal {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Bottone di invio Form */
 div[data-testid="stFormSubmitButton"] > button {
-    background-color: #1a5f3f !important;
+    background: linear-gradient(135deg, #1a5f3f 0%, #2e7d32 100%) !important;
     color: #ffffff !important;
-    font-size: 1.3rem !important;
-    padding: 1rem !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
+    padding: 0.9rem !important;
+    border-radius: 14px !important;
+    border: none !important;
+    box-shadow: 0 4px 12px rgba(26, 95, 63, 0.3) !important;
+    transition: all 0.3s ease !important;
+}
+
+div[data-testid="stFormSubmitButton"] > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(26, 95, 63, 0.4) !important;
+}
+
+/* Bottoni generali */
+.stButton > button {
     border-radius: 12px !important;
+    font-weight: 600 !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -199,7 +250,7 @@ def genera_giornata(target_macros, n_pasti, stile, colazione_pref, max_tempo):
     return day_plan, day_targets
 
 # ============================================================
-# 4. RIPRISTINO DATI SALVATI ALL'AVVIO
+# 4. RIPRISTINO DATI SALVATI
 # ============================================================
 if "day_plan" not in st.session_state or not st.session_state.day_plan:
     dati_salvati = carica_dati_locali()
@@ -212,82 +263,100 @@ if "day_plan" not in st.session_state or not st.session_state.day_plan:
 # ============================================================
 # 5. INTERFACCIA UTENTE
 # ============================================================
-col_logo, col_titolo = st.columns([1, 6])
-with col_logo:
-    st.write("# 🏋️‍♂️")
-with col_titolo:
-    st.title("MacroMind")
-
-st.caption("Nutrizione Personalizzata & Calcolo Macro")
+st.title("🏋️‍♂️ MacroMind")
+st.caption("Nutrizione Personalizzata & Calcolo Macro Automagico")
 st.divider()
 
 with st.form("form_piano"):
-    st.header("1️⃣ I tuoi dati")
+    st.subheader("1️⃣ I tuoi dati fisiologici")
     c1, c2 = st.columns(2)
     with c1:
-        età = st.number_input("Età", 14, 100, 25)
+        età = st.number_input("Età", 14, 100, 22)
         sesso = st.radio("Sesso", ["Donna", "Uomo"], horizontal=True)
-        peso = st.number_input("Peso (kg)", 30.0, 200.0, 65.0)
+        peso = st.number_input("Peso (kg)", 30.0, 200.0, 58.0)
     with c2:
-        altezza = st.number_input("Altezza (cm)", 120.0, 230.0, 168.0)
-        attività_scelta = st.selectbox("Attività fisica", list(ATTIVITA.keys()))
+        altezza = st.number_input("Altezza (cm)", 120.0, 230.0, 165.0)
+        attività_scelta = st.selectbox("Attività fisica", list(ATTIVITA.keys()), index=2)
         obiettivo_scelta = st.selectbox("Obiettivo", OBIETTIVI)
 
     st.divider()
-    st.header("2️⃣ Preferenze")
+    st.subheader("2️⃣ Preferenze e Stile di vita")
     stile = st.radio("Stile alimentare", ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], horizontal=True)
     col_a, col_b = st.columns(2)
     with col_a:
-        colazione_pref = st.radio("Colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
-        n_pasti = st.radio("Pasti al giorno", [3, 4, 5], horizontal=True)
+        colazione_pref = st.radio("Preferenza colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
+        n_pasti = st.radio("Pasti al giorno", [3, 4, 5], index=1, horizontal=True)
     with col_b:
         tempo_scelto = st.select_slider("⏱️ Tempo max preparazione:", ["< 15 min", "15-30 min", "Senza limiti"], value="Senza limiti")
 
-    submitted = st.form_submit_button("🚀 GENERA E SALVA PIANO", use_container_width=True)
+    submitted = st.form_submit_button("🚀 GENERA E SALVA IL PIANO", use_container_width=True)
 
 if submitted:
     max_tempo_min = 15 if tempo_scelto == "< 15 min" else (30 if tempo_scelto == "15-30 min" else None)
     target, bmr, tdee = calcola_target_automatico(età, sesso, peso, altezza, ATTIVITA[attività_scelta], obiettivo_scelta)
     
     day_plan, day_targets = genera_giornata(target, n_pasti, stile, colazione_pref, max_tempo_min)
-    info_calcolo = f"Metabolismo basale: {bmr} kcal | TDEE: {tdee} kcal"
+    info_calcolo = f"🔥 Metabolismo Basale: {bmr} kcal | TDEE (Fabbisogno): {tdee} kcal"
 
-    # Salva in sessione
     st.session_state.day_plan = day_plan
     st.session_state.target_macros = target
     st.session_state.day_targets = day_targets
     st.session_state.info_calcolo = info_calcolo
 
-    # Salva permanentemente su file locale user_data.json
     salva_dati_locali({
         "day_plan": day_plan,
         "target_macros": target,
         "day_targets": day_targets,
         "info_calcolo": info_calcolo,
     })
-    st.success("✅ Piano generato e salvato con successo!")
+    st.success("✅ Piano generato con successo! È stato memorizzato.")
 
 # ============================================================
-# 6. VISUALIZZAZIONE RISULTATI
+# 6. VISUALIZZAZIONE RISULTATI CARD-STYLE
 # ============================================================
 if "day_plan" in st.session_state and st.session_state.day_plan:
     st.divider()
+    
+    if st.session_state.target_macros:
+        tm = st.session_state.target_macros
+        st.subheader("📊 Target Giornaliero Calcolato")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Kcal Totali", f"{tm['kcal']} kcal")
+        m2.metric("Proteine", f"{tm['prot']} g")
+        m3.metric("Carboidrati", f"{tm['carb']} g")
+        m4.metric("Grassi", f"{tm['fat']} g")
+        
     if st.session_state.info_calcolo:
-        st.info(st.session_state.info_calcolo)
-
-    st.header("🍽️ Il Tuo Piano Alimentare Salvato")
-    for slot, meal in st.session_state.day_plan.items():
-        icona = ICONE_SLOT.get(slot, "🍴")
-        with st.container():
-            st.subheader(f"{icona} {slot} — {meal['nome']}")
-            st.caption(f"⏱️ Tempo: {meal['tempo']} min")
-            for nome, g in meal["ingredienti"]:
-                st.write(f"• {nome}: **{g} g**")
-            t = meal["totali"]
-            st.caption(f"Kcal: {t['kcal']:.0f} | P: {t['prot']:.0f}g | C: {t['carb']:.0f}g | G: {t['fat']:.0f}g")
+        st.caption(st.session_state.info_calcolo)
 
     st.write("")
-    if st.button("🗑️ Rimuovi piano salvato"):
+    st.subheader("🍽️ Il Tuo Piano Alimentare Personalizzato")
+    
+    for slot, meal in st.session_state.day_plan.items():
+        icona = ICONE_SLOT.get(slot, "🍴")
+        t = meal["totali"]
+        
+        # Inizio Card HTML / CSS Custom
+        st.markdown(f"""
+        <div class="meal-card">
+            <h3 style="margin:0 0 10px 0; color:#1a5f3f;">{icona} {slot} — {meal['nome']}</h3>
+            <p style="margin:0 0 10px 0; font-size:0.9rem; color:#666;">⏱️ Tempo preparazione: <b>{meal['tempo']} min</b> | <i>{meal['nota']}</i></p>
+            <div style="margin-bottom: 12px;">
+                <span class="macro-badge macro-kcal">🔥 {t['kcal']:.0f} kcal</span>
+                <span class="macro-badge">🥩 P: {t['prot']:.0f}g</span>
+                <span class="macro-badge">🌾 C: {t['carb']:.0f}g</span>
+                <span class="macro-badge">🥑 G: {t['fat']:.0f}g</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Lista ingredienti pulita
+        with st.expander(f"🛒 Ingredienti per {slot}"):
+            for nome, g in meal["ingredienti"]:
+                st.write(f"• **{nome}**: {g} g")
+
+    st.divider()
+    if st.button("🗑️ Rimuovi e Ricomincia"):
         if os.path.exists(SAVE_FILE):
             os.remove(SAVE_FILE)
         st.session_state.clear()
