@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 MACROMIND — Web App Streamlit
-Versione Full: Allergie + Cambio Singolo Piatto + Sostituzione Ingredienti + Salvataggio + PWA
+Versione Full: Allergie + Cibi da Evitare + Cambio Singolo Piatto + 
+Sostituzione Ingredienti + Salvataggio + Download TXT + PWA
 """
 
 import streamlit as st
@@ -102,7 +103,7 @@ div[data-testid="stFormSubmitButton"] > button {
     box-shadow: 0 4px 12px rgba(26, 95, 63, 0.3) !important;
 }
 
-.stButton > button {
+.stButton > button, .stDownloadButton > button {
     border-radius: 12px !important;
     font-weight: 600 !important;
 }
@@ -253,13 +254,26 @@ def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obi
     carb_kcal = max(kcal - prot_kcal - fat_kcal, kcal * 0.20)
     return {"kcal": round(kcal), "prot": round(prot_g), "carb": round(carb_kcal / 4), "fat": round(fat_kcal / 9)}, round(bmr), round(tdee)
 
-def estrai_ricetta_valida(pool, stile, allergie, usate):
+def contiene_cibi_sgraditi(ricetta, cibi_da_evitare):
+    if not cibi_da_evitare:
+        return False
+    ingr_ricetta = [ing[0].lower() for ing in ricetta["ingredienti"]]
+    nome_ricetta = ricetta["nome"].lower()
+    for cibo in cibi_da_evitare:
+        cib_clean = cibo.strip().lower()
+        if cib_clean and (cib_clean in nome_ricetta or any(cib_clean in ing for ing in ingr_ricetta)):
+            return True
+    return False
+
+def estrai_ricetta_valida(pool, stile, allergie, cibi_da_evitare, usate):
     candidati = []
     for r in pool:
         if stile in r["diete"]:
             # Verifica allergeni
             if not any(a in r["allergeni"] for a in allergie):
-                candidati.append(r)
+                # Verifica cibi sgraditi
+                if not contiene_cibi_sgraditi(r, cibi_da_evitare):
+                    candidati.append(r)
     
     if not candidati:
         candidati = pool # Fallback se nessuna ricetta rispetta i filtri rigidi
@@ -267,8 +281,8 @@ def estrai_ricetta_valida(pool, stile, allergie, usate):
     non_usate = [r for r in candidati if r["nome"] not in usate]
     return random.choice(non_usate if non_usate else candidati)
 
-def genera_pasto(pool, target_kcal, stile, allergie, ricette_usate):
-    ricetta = estrai_ricetta_valida(pool, stile, allergie, ricette_usate)
+def genera_pasto(pool, target_kcal, stile, allergie, cibi_da_evitare, ricette_usate):
+    ricetta = estrai_ricetta_valida(pool, stile, allergie, cibi_da_evitare, ricette_usate)
     ricette_usate.add(ricetta["nome"])
     
     base = totali_ingredienti(ricetta["ingredienti"])
@@ -284,7 +298,7 @@ def genera_pasto(pool, target_kcal, stile, allergie, ricette_usate):
         "tempo": ricetta["tempo"]
     }
 
-def genera_giornata(target_macros, n_pasti, stile, allergie):
+def genera_giornata(target_macros, n_pasti, stile, allergie, cibi_da_evitare):
     distribuzione = DISTRIBUZIONE[n_pasti]
     day_plan, day_targets = {}, {}
     ricette_usate = set()
@@ -293,9 +307,36 @@ def genera_giornata(target_macros, n_pasti, stile, allergie):
         slot_target = {k: v * perc for k, v in target_macros.items()}
         day_targets[slot] = slot_target
         pool = RICETTE_COLAZIONE if "Colazione" in slot else (RICETTE_SPUNTINO if "Spuntino" in slot else RICETTE_PRINCIPALI)
-        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, allergie, ricette_usate)
+        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, allergie, cibi_da_evitare, ricette_usate)
         
     return day_plan, day_targets
+
+def genera_testo_download(target_macros, day_plan):
+    txt = "=========================================\n"
+    txt += "        MACROMIND — PIANO GIORNALIERO\n"
+    txt += "=========================================\n\n"
+    
+    if target_macros:
+        txt += f"TARGET MACRO GIORNALIERI:\n"
+        txt += f"• Calorie: {target_macros['kcal']} kcal\n"
+        txt += f"• Proteine: {target_macros['prot']} g\n"
+        txt += f"• Carboidrati: {target_macros['carb']} g\n"
+        txt += f"• Grassi: {target_macros['fat']} g\n"
+        txt += "-----------------------------------------\n\n"
+    
+    for slot, meal in day_plan.items():
+        t = meal["totali"]
+        txt += f"=== {slot.upper()} — {meal['nome']} ===\n"
+        txt += f"⏱️ Tempo di preparazione: {meal['tempo']} min\n"
+        txt += f"📊 Valori Nutrizionali: {t['kcal']:.0f} kcal | P: {t['prot']:.0f}g | C: {t['carb']:.0f}g | G: {t['fat']:.0f}g\n\n"
+        txt += "🛒 INGREDIENTI:\n"
+        for ing_nome, ing_g in meal["ingredienti"]:
+            txt += f"  - {ing_nome}: {ing_g} g\n"
+        txt += f"\n👨‍🍳 ISTRUZIONI:\n  {meal['istruzioni']}\n"
+        txt += "-----------------------------------------\n\n"
+        
+    txt += "Generato con MacroMind App."
+    return txt
 
 # ============================================================
 # 4. RIPRISTINO STATO
@@ -309,6 +350,7 @@ if "day_plan" not in st.session_state or not st.session_state.day_plan:
         st.session_state.info_calcolo = dati_salvati.get("info_calcolo", None)
         st.session_state.stile = dati_salvati.get("stile", "Onnivoro")
         st.session_state.allergie = dati_salvati.get("allergie", [])
+        st.session_state.cibi_evitare = dati_salvati.get("cibi_evitare", "")
 
 # ============================================================
 # 5. FORM PARAMETRI
@@ -330,11 +372,15 @@ with st.form("form_piano"):
         obiettivo_scelta = st.selectbox("Obiettivo", OBIETTIVI)
 
     st.divider()
-    st.subheader("2️⃣ Preferenze & Intolleranze")
+    st.subheader("2️⃣ Preferenze, Intolleranze e Gusti")
     stile = st.radio("Stile alimentare", ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], horizontal=True)
     
-    allergie = st.multiselect("⚠️ Seleziona le tue allergie/intolleranze:", ALLERGENI_DISPONIBILI)
-    
+    col_pref1, col_pref2 = st.columns(2)
+    with col_pref1:
+        allergie = st.multiselect("⚠️ Seleziona allergie/intolleranze:", ALLERGENI_DISPONIBILI)
+    with col_pref2:
+        cibi_evitare_input = st.text_input("🚫 Cibi che non ti piacciono (separati da virgola):", placeholder="es. miele, merluzzo, broccoli")
+
     col_a, col_b = st.columns(2)
     with col_a:
         colazione_pref = st.radio("Preferenza colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
@@ -345,8 +391,9 @@ with st.form("form_piano"):
     submitted = st.form_submit_button("🚀 GENERA PIANO PERSONALIZZATO", use_container_width=True)
 
 if submitted:
+    cibi_evitare_lista = [c.strip() for c in cibi_evitare_input.split(",") if c.strip()]
     target, bmr, tdee = calcola_target_automatico(età, sesso, peso, altezza, ATTIVITA[attività_scelta], obiettivo_scelta)
-    day_plan, day_targets = genera_giornata(target, n_pasti, stile, allergie)
+    day_plan, day_targets = genera_giornata(target, n_pasti, stile, allergie, cibi_evitare_lista)
     info_calcolo = f"🔥 BMR: {bmr} kcal | TDEE: {tdee} kcal"
 
     st.session_state.day_plan = day_plan
@@ -355,11 +402,12 @@ if submitted:
     st.session_state.info_calcolo = info_calcolo
     st.session_state.stile = stile
     st.session_state.allergie = allergie
+    st.session_state.cibi_evitare = cibi_evitare_input
 
     salva_dati_locali({
         "day_plan": day_plan, "target_macros": target,
         "day_targets": day_targets, "info_calcolo": info_calcolo,
-        "stile": stile, "allergie": allergie
+        "stile": stile, "allergie": allergie, "cibi_evitare": cibi_evitare_input
     })
     st.success("✅ Piano generato con successo!")
 
@@ -383,6 +431,7 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
     
     stile_curr = st.session_state.get("stile", "Onnivoro")
     allergie_curr = st.session_state.get("allergie", [])
+    cibi_evitare_curr = [c.strip() for c in st.session_state.get("cibi_evitare", "").split(",") if c.strip()]
 
     for slot, meal in list(st.session_state.day_plan.items()):
         icona = ICONE_SLOT.get(slot, "🍴")
@@ -410,11 +459,11 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
                 pool = RICETTE_COLAZIONE if "Colazione" in slot else (RICETTE_SPUNTINO if "Spuntino" in slot else RICETTE_PRINCIPALI)
                 usate = {m["nome"] for m in st.session_state.day_plan.values()}
                 target_kcal = st.session_state.day_targets[slot]["kcal"]
-                st.session_state.day_plan[slot] = genera_pasto(pool, target_kcal, stile_curr, allergie_curr, usate)
+                st.session_state.day_plan[slot] = genera_pasto(pool, target_kcal, stile_curr, allergie_curr, cibi_evitare_curr, usate)
                 salva_dati_locali({
                     "day_plan": st.session_state.day_plan, "target_macros": st.session_state.target_macros,
                     "day_targets": st.session_state.day_targets, "info_calcolo": st.session_state.info_calcolo,
-                    "stile": stile_curr, "allergie": allergie_curr
+                    "stile": stile_curr, "allergie": allergie_curr, "cibi_evitare": st.session_state.get("cibi_evitare", "")
                 })
                 st.rerun()
 
@@ -431,7 +480,6 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
                 with c_ing1:
                     st.write(f"• **{ing_nome}**: {ing_grammi} g")
                 with c_ing2:
-                    # Sostituzione dinamica alimento
                     cat_attuale = FOODS.get(ing_nome, {}).get("cat", "")
                     opzioni_simili = [f for f, d in FOODS.items() if d.get("cat") == cat_attuale]
                     if not opzioni_simili:
@@ -445,28 +493,38 @@ if "day_plan" in st.session_state and st.session_state.day_plan:
                     )
                     
                     if nuovo_ing != ing_nome:
-                        # Ricalcola i grammi per mantenere uguali le Kcal dell'ingrediente sostituito
                         kcal_orig = (FOODS[ing_nome]["kcal"] / 100.0) * ing_grammi
                         nuovi_g = max(round((kcal_orig / FOODS[nuovo_ing]["kcal"]) * 100.0), 1)
                         nuova_lista.append((nuovo_ing, nuovi_g))
                     else:
                         nuova_lista.append((ing_nome, ing_grammi))
             
-            # Aggiorna se un ingrediente è stato sostituito
             if nuova_lista != meal["ingredienti"]:
                 st.session_state.day_plan[slot]["ingredienti"] = nuova_lista
                 st.session_state.day_plan[slot]["totali"] = totali_ingredienti(nuova_lista)
                 salva_dati_locali({
                     "day_plan": st.session_state.day_plan, "target_macros": st.session_state.target_macros,
                     "day_targets": st.session_state.day_targets, "info_calcolo": st.session_state.info_calcolo,
-                    "stile": stile_curr, "allergie": allergie_curr
+                    "stile": stile_curr, "allergie": allergie_curr, "cibi_evitare": st.session_state.get("cibi_evitare", "")
                 })
                 st.rerun()
 
     st.divider()
-    if st.button("🗑️ Rimuovi e Ricomincia"):
-        if os.path.exists(SAVE_FILE):
-            os.remove(SAVE_FILE)
-        st.session_state.clear()
-        st.rerun()
-        
+    
+    # Download e Reset
+    c_down, c_reset = st.columns(2)
+    with c_down:
+        testo_download = genera_testo_download(st.session_state.target_macros, st.session_state.day_plan)
+        st.download_button(
+            label="📥 SALVA PIANO GIORNALIERO (TXT)",
+            data=testo_download,
+            file_name="MacroMind_Piano_Giornaliero.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    with c_reset:
+        if st.button("🗑️ Rimuovi e Ricomincia", use_container_width=True):
+            if os.path.exists(SAVE_FILE):
+                os.remove(SAVE_FILE)
+            st.session_state.clear()
+            st.rerun()
