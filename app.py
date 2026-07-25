@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-PIANO PASTI BILANCIATO — Web App Streamlit
+MACROMIND — Web App Streamlit
 Sviluppata secondo principi EFSA/LARN e best practice UX ad alta accessibilità.
 Requisiti: pip install streamlit
 Avvio: streamlit run app.py
@@ -11,27 +11,29 @@ import random
 import datetime
 
 # ============================================================
-# 0. CONFIGURAZIONE PAGINA (deve essere il primo comando st.*)
+# 0. CONFIGURAZIONE PAGINA (Titolo, Logo Favicon e Layout)
 # ============================================================
 st.set_page_config(
-    page_title="🥗 Piano Pasti Bilanciato",
-    page_icon="🥗",
+    page_title="MacroMind",
+    page_icon="🧠",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
 
 # ============================================================
-# 1. CSS PER ALTA ACCESSIBILITÀ
+# 1. CSS PER ALTA ACCESSIBILITÀ E DESIGN MODERNO
 # ============================================================
 st.markdown("""
 <style>
 html, body, [class*="css"]  { font-size: 19px !important; }
-h1 { font-size: 2.3rem !important; font-weight: 800 !important; }
-h2 { font-size: 1.7rem !important; font-weight: 800 !important; }
+h1 { font-size: 2.3rem !important; font-weight: 800 !important; color: #1a5f3f; }
+h2 { font-size: 1.7rem !important; font-weight: 800 !important; color: #2e4053; }
 h3 { font-size: 1.35rem !important; font-weight: 700 !important; }
 p, li, label, span { font-size: 1.02rem !important; }
+
+/* Pulsanti principali */
 .stButton > button {
-    font-size: 1.15rem !important;
+    font-size: 1.1rem !important;
     font-weight: 700 !important;
     padding: 0.75rem 1.4rem !important;
     border-radius: 12px !important;
@@ -45,19 +47,33 @@ p, li, label, span { font-size: 1.02rem !important; }
     color: #ffffff !important;
     border: 2px solid #1a5f3f !important;
 }
+
+/* Pulsante Form Submit */
 div[data-testid="stFormSubmitButton"] > button {
     background-color: #1a5f3f !important;
     color: #ffffff !important;
     font-size: 1.3rem !important;
     padding: 1rem !important;
+    border-radius: 12px !important;
 }
 div[data-testid="stFormSubmitButton"] > button:hover {
     background-color: #103d28 !important;
     border: 2px solid #103d28 !important;
 }
+
+/* Card e riquadri moderni */
+div[data-testid="stContainer"] {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 16px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
+}
+
 div[data-testid="stMetricValue"] { font-size: 1.7rem !important; }
-div[data-testid="stExpander"] { border: 2px solid #dddddd !important; border-radius: 10px !important; }
-hr { border: 1px solid #dddddd; }
+div[data-testid="stExpander"] { border: 1px solid #cccccc !important; border-radius: 10px !important; background-color: #ffffff; }
+hr { border: 1px solid #e0e0e0; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -111,7 +127,6 @@ FOODS = {
     "Hummus":                       {"kcal":166,"prot":8.0, "carb":14.0,"fat":10.0,"cat":"Dispensa"},
 }
 
-# Allergeni presenti in specifici alimenti (usato anche per filtrare le sostituzioni)
 FOOD_ALLERGENI = {
     "Latte parzialmente scremato": ["lattosio"],
     "Yogurt greco": ["lattosio"],
@@ -134,7 +149,6 @@ ETICHETTE_ALLERGENI = {
     "🥚 Senza Uova": "uova",
 }
 
-# Ingredienti sostituibili (ricalcolo automatico delle grammature)
 SUBSTITUZIONI = {
     "Riso basmati (crudo)": ["Farro (crudo)", "Quinoa (cruda)", "Pasta di semola (cruda)", "Pasta senza glutine"],
     "Farro (crudo)": ["Riso basmati (crudo)", "Quinoa (cruda)", "Pasta di semola (cruda)"],
@@ -156,13 +170,13 @@ SUBSTITUZIONI = {
 }
 
 # ============================================================
-# 3. DATABASE RICETTE
+# 3. DATABASE RICETTE (con tempi di preparazione)
 # ============================================================
 RICETTE_COLAZIONE = [
     {"nome": "Porridge d'avena con frutti di bosco e miele", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio"],
      "ingredienti": [("Fiocchi d'avena", 50), ("Latte parzialmente scremato", 200), ("Mirtilli", 60), ("Miele", 10)],
-     "tempo": 8, "nota": "Ricco di fibre solubili (beta-glucani) che rallentano l'assorbimento degli zuccheri, favorendo stabilità glicemica al mattino."},
+     "tempo": 8, "nota": "Ricco di fibre solubili (beta-glucani) che rallentano l'assorbimento degli zuccheri."},
     {"nome": "Porridge vegan con frutti di bosco e chia", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Fiocchi d'avena", 50), ("Latte di soia", 200), ("Mirtilli", 60), ("Semi di chia", 10)],
@@ -174,15 +188,15 @@ RICETTE_COLAZIONE = [
     {"nome": "Yogurt greco con mandorle, mela e miele", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio", "frutta_a_guscio"],
      "ingredienti": [("Yogurt greco", 200), ("Mandorle", 20), ("Miele", 10), ("Mela", 100)],
-     "tempo": 5, "nota": "Ottimo rapporto proteine/grassi buoni, con zuccheri a rilascio graduale dalla frutta fresca."},
+     "tempo": 5, "nota": "Ottimo rapporto proteine/grassi buoni, con zuccheri a rilascio graduale."},
     {"nome": "Yogurt di soia con frutta e semi di chia", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Yogurt di soia", 200), ("Banana", 100), ("Semi di chia", 15), ("Mirtilli", 50)],
-     "tempo": 5, "nota": "Alternativa 100% vegetale, ricca di fibre e antiossidanti dai frutti di bosco."},
+     "tempo": 5, "nota": "Alternativa 100% vegetale, ricca di fibre e antiossidanti."},
     {"nome": "Toast integrale con avocado e uovo", "slot": "colazione", "tipo_colazione": "salata",
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["uova", "glutine"],
      "ingredienti": [("Pane integrale", 60), ("Avocado", 60), ("Uova", 50), ("Pomodori", 50)],
-     "tempo": 10, "nota": "I grassi monoinsaturi dell'avocado favoriscono sazietà e assorbimento delle vitamine liposolubili."},
+     "tempo": 10, "nota": "I grassi monoinsaturi dell'avocado favoriscono sazietà e assorbimento delle vitamine."},
     {"nome": "Toast senza glutine con hummus e verdure", "slot": "colazione", "tipo_colazione": "salata",
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Pane senza glutine", 60), ("Hummus", 60), ("Pomodori", 50), ("Insalata mista", 30)],
@@ -190,7 +204,7 @@ RICETTE_COLAZIONE = [
     {"nome": "Uova strapazzate con bresaola", "slot": "colazione", "tipo_colazione": "salata",
      "diete": ["Onnivoro", "Pescetariano"], "allergeni": ["uova"],
      "ingredienti": [("Uova", 100), ("Bresaola", 40), ("Pomodori", 50)],
-     "tempo": 8, "nota": "Colazione ad alta densità proteica, povera di carboidrati: utile in fase di definizione."},
+     "tempo": 8, "nota": "Colazione ad alta densità proteica, povera di carboidrati."},
     {"nome": "Fette biscottate con ricotta e marmellata", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio", "glutine"],
      "ingredienti": [("Fette biscottate integrali", 40), ("Ricotta", 100), ("Marmellata", 20)],
@@ -198,14 +212,14 @@ RICETTE_COLAZIONE = [
     {"nome": "Yogurt greco con fiocchi d'avena, mela e noci", "slot": "colazione", "tipo_colazione": "dolce",
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio", "frutta_a_guscio"],
      "ingredienti": [("Yogurt greco", 150), ("Fiocchi d'avena", 30), ("Mela", 100), ("Noci", 15)],
-     "tempo": 5, "nota": "Combinazione di proteine, fibre e grassi buoni per un mattino energico e saziante."},
+     "tempo": 5, "nota": "Combinazione di proteine, fibre e grassi buoni per un mattino energico."},
 ]
 
 RICETTE_PRINCIPALI = [
     {"nome": "Petto di pollo con riso basmati e broccoli", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro"], "allergeni": [],
      "ingredienti": [("Petto di pollo", 150), ("Riso basmati (crudo)", 70), ("Broccoli", 200), ("Olio EVO", 10)],
-     "tempo": 25, "nota": "Proteine nobili ad alta digeribilità abbinate a carboidrati a medio indice glicemico, per il recupero energetico."},
+     "tempo": 25, "nota": "Proteine nobili ad alta digeribilità abbinate a carboidrati a medio indice glicemico."},
     {"nome": "Salmone al forno con patate e zucchine", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Salmone", 150), ("Patate", 200), ("Zucchine", 150), ("Olio EVO", 10)],
@@ -217,7 +231,7 @@ RICETTE_PRINCIPALI = [
     {"nome": "Tacchino con quinoa e carote", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro"], "allergeni": [],
      "ingredienti": [("Tacchino fette", 150), ("Quinoa (cruda)", 70), ("Carote", 150), ("Olio EVO", 10)],
-     "tempo": 20, "nota": "La quinoa è un carboidrato completo di tutti gli amminoacidi essenziali, utile complemento alla proteina magra."},
+     "tempo": 20, "nota": "La quinoa è un carboidrato completo di tutti gli amminoacidi essenziali."},
     {"nome": "Tofu saltato con riso e verdure miste", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Tofu", 180), ("Riso basmati (crudo)", 70), ("Zucchine", 100), ("Carote", 100), ("Olio EVO", 10)],
@@ -225,7 +239,7 @@ RICETTE_PRINCIPALI = [
     {"nome": "Lenticchie con farro e pomodorini", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": ["glutine"],
      "ingredienti": [("Lenticchie secche", 80), ("Farro (crudo)", 60), ("Pomodori", 100), ("Olio EVO", 10)],
-     "tempo": 30, "nota": "Abbinamento legumi-cereali che fornisce un profilo amminoacidico completo, ricco di fibre."},
+     "tempo": 30, "nota": "Abbinamento legumi-cereali che fornisce un profilo amminoacidico completo."},
     {"nome": "Ceci con quinoa e spinaci", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Ceci secchi", 80), ("Quinoa (cruda)", 60), ("Spinaci", 150), ("Olio EVO", 10)],
@@ -241,7 +255,7 @@ RICETTE_PRINCIPALI = [
     {"nome": "Insalatona con pollo, uova e verdure", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro"], "allergeni": ["uova"],
      "ingredienti": [("Petto di pollo", 120), ("Uova", 50), ("Insalata mista", 100), ("Pomodori", 100), ("Olio EVO", 10)],
-     "tempo": 12, "nota": "Pasto fresco e ad alta densità proteica, con pochi carboidrati: ottimo in fase di definizione."},
+     "tempo": 12, "nota": "Pasto fresco e ad alta densità proteica, con pochi carboidrati."},
     {"nome": "Ceci speziati con verdure croccanti", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
      "ingredienti": [("Ceci secchi", 100), ("Insalata mista", 100), ("Carote", 100), ("Olio EVO", 10)],
@@ -253,18 +267,18 @@ RICETTE_PRINCIPALI = [
     {"nome": "Bresaola con insalata e scaglie di grana", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro"], "allergeni": ["lattosio"],
      "ingredienti": [("Bresaola", 120), ("Insalata mista", 100), ("Parmigiano", 20), ("Olio EVO", 8)],
-     "tempo": 5, "nota": "Pasto leggero e rapido, con proteine magre di alta qualità biologica."},
+     "tempo": 5, "nota": "Pasto leggero e velocissimo, con proteine magre di alta qualità."},
     {"nome": "Riso basmati con tofu, carote e mandorle", "slot": "principale", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": ["frutta_a_guscio"],
      "ingredienti": [("Riso basmati (crudo)", 70), ("Tofu", 150), ("Carote", 100), ("Mandorle", 15), ("Olio EVO", 8)],
-     "tempo": 18, "nota": "Piatto vegetale completo, con grassi buoni dalle mandorle a completare il profilo lipidico."},
+     "tempo": 18, "nota": "Piatto vegetale completo, con grassi buoni dalle mandorle."},
 ]
 
 RICETTE_SPUNTINO = [
     {"nome": "Yogurt greco con mandorle", "slot": "spuntino", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio", "frutta_a_guscio"],
      "ingredienti": [("Yogurt greco", 150), ("Mandorle", 15)],
-     "tempo": 2, "nota": "Spuntino proteico che aiuta a contenere la fame nervosa tra un pasto e l'altro."},
+     "tempo": 2, "nota": "Spuntino proteico che aiuta a contenere la fame nervosa."},
     {"nome": "Frutta fresca con noci", "slot": "spuntino", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": ["frutta_a_guscio"],
      "ingredienti": [("Mela", 150), ("Noci", 15)],
@@ -280,7 +294,7 @@ RICETTE_SPUNTINO = [
     {"nome": "Involtini di bresaola", "slot": "spuntino", "tipo_colazione": None,
      "diete": ["Onnivoro"], "allergeni": [],
      "ingredienti": [("Bresaola", 60), ("Insalata mista", 30)],
-     "tempo": 3, "nota": "Spuntino magro e proteico, ideale per chi ha necessità di alte quote di proteine."},
+     "tempo": 3, "nota": "Spuntino magro e proteico, ideale per chi necessita di alte quote proteiche."},
     {"nome": "Ricotta con miele", "slot": "spuntino", "tipo_colazione": None,
      "diete": ["Onnivoro", "Vegetariano", "Pescetariano"], "allergeni": ["lattosio"],
      "ingredienti": [("Ricotta", 100), ("Miele", 10)],
@@ -291,10 +305,9 @@ RICETTA_FALLBACK = {
     "nome": "Piatto semplice componibile: riso, verdure e olio EVO", "slot": "qualsiasi", "tipo_colazione": None,
     "diete": ["Onnivoro", "Vegetariano", "Vegano", "Pescetariano"], "allergeni": [],
     "ingredienti": [("Riso basmati (crudo)", 70), ("Zucchine", 150), ("Olio EVO", 10)],
-    "tempo": 15, "nota": "Opzione semplice e neutra, generata perché i filtri impostati erano molto restrittivi per questo pasto."
+    "tempo": 15, "nota": "Opzione semplice e neutra, generata perché i filtri impostati erano molto restrittivi."
 }
 
-# Distribuzione percentuale dei macro tra i pasti della giornata
 DISTRIBUZIONE = {
     3: {"Colazione": 0.25, "Pranzo": 0.40, "Cena": 0.35},
     4: {"Colazione": 0.20, "Spuntino": 0.10, "Pranzo": 0.35, "Cena": 0.35},
@@ -316,9 +329,8 @@ ATTIVITA = {
 
 OBIETTIVI = ["Mantenimento del peso", "Deficit progressivo (dimagrimento)", "Massa muscolare / Ricomposizione"]
 
-
 # ============================================================
-# 4. FUNZIONI DI CALCOLO NUTRIZIONALE
+# 4. FUNZIONI DI CALCOLO E FILTRAGGIO
 # ============================================================
 def totali_ingredienti(lista_ingr):
     tot = {"kcal": 0.0, "prot": 0.0, "carb": 0.0, "fat": 0.0}
@@ -330,7 +342,6 @@ def totali_ingredienti(lista_ingr):
         tot["carb"] += f["carb"] * fattore
         tot["fat"] += f["fat"] * fattore
     return tot
-
 
 def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obiettivo):
     bmr = 10 * peso + 6.25 * altezza - 5 * età + (5 if sesso == "Uomo" else -161)
@@ -351,7 +362,6 @@ def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obi
     fat_kcal = kcal * 0.30
     carb_kcal = kcal - prot_kcal - fat_kcal
 
-    # Rete di sicurezza: almeno il 20% delle kcal da carboidrati (linee guida LARN)
     if carb_kcal < kcal * 0.20:
         carb_kcal = kcal * 0.20
         fat_kcal = max(kcal - prot_kcal - carb_kcal, 0)
@@ -362,8 +372,7 @@ def calcola_target_automatico(età, sesso, peso, altezza, fattore_attività, obi
     target = {"kcal": round(kcal), "prot": round(prot_g), "carb": round(carb_g), "fat": round(fat_g)}
     return target, round(bmr), round(tdee)
 
-
-def filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione=None):
+def filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione=None, max_tempo=None):
     bl = [b.strip().lower() for b in blacklist if b.strip()]
     risultati = []
     for r in pool:
@@ -376,9 +385,11 @@ def filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione=None):
         nomi_ingr = " ".join(n.lower() for n, _ in r["ingredienti"])
         if any(b in nomi_ingr for b in bl):
             continue
+        # Filtro tempo di preparazione
+        if max_tempo and max_tempo > 0 and r["tempo"] > max_tempo:
+            continue
         risultati.append(r)
     return risultati
-
 
 def scala_ricetta(ricetta, target_kcal):
     base = totali_ingredienti(ricetta["ingredienti"])
@@ -387,9 +398,13 @@ def scala_ricetta(ricetta, target_kcal):
     tot = totali_ingredienti(nuovi_ingr)
     return nuovi_ingr, tot
 
+def genera_pasto(pool, target_kcal, stile, intolleranze, blacklist, tipo_colazione=None, max_tempo=None, escludi_nome=None):
+    candidati = filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione, max_tempo)
+    
+    # Se il filtro tempo è troppo stringente, proviamo senza filtro tempo prima del fallback
+    if not candidati and max_tempo:
+        candidati = filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione, max_tempo=None)
 
-def genera_pasto(pool, target_kcal, stile, intolleranze, blacklist, tipo_colazione=None, escludi_nome=None):
-    candidati = filtra_ricette(pool, stile, intolleranze, blacklist, tipo_colazione)
     if escludi_nome:
         alternativi = [r for r in candidati if r["nome"] != escludi_nome]
         if alternativi:
@@ -397,7 +412,6 @@ def genera_pasto(pool, target_kcal, stile, intolleranze, blacklist, tipo_colazio
 
     avviso = False
     if not candidati:
-        # Fallback gentile: piatto semplice e neutro, per non far fallire la generazione
         candidati = [RICETTA_FALLBACK]
         avviso = True
 
@@ -408,8 +422,7 @@ def genera_pasto(pool, target_kcal, stile, intolleranze, blacklist, tipo_colazio
         "nota": ricetta["nota"], "tempo": ricetta["tempo"], "avviso": avviso,
     }
 
-
-def genera_giornata(target_macros, n_pasti, stile, intolleranze, blacklist, colazione_pref):
+def genera_giornata(target_macros, n_pasti, stile, intolleranze, blacklist, colazione_pref, max_tempo):
     distribuzione = DISTRIBUZIONE[n_pasti]
     day_plan, day_targets = {}, {}
     for slot, perc in distribuzione.items():
@@ -421,9 +434,8 @@ def genera_giornata(target_macros, n_pasti, stile, intolleranze, blacklist, cola
             pool, tipo_col = RICETTE_SPUNTINO, None
         else:
             pool, tipo_col = RICETTE_PRINCIPALI, None
-        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, intolleranze, blacklist, tipo_col)
+        day_plan[slot] = genera_pasto(pool, slot_target["kcal"], stile, intolleranze, blacklist, tipo_col, max_tempo)
     return day_plan, day_targets
-
 
 def somma_giornata(day_plan):
     tot = {"kcal": 0.0, "prot": 0.0, "carb": 0.0, "fat": 0.0}
@@ -431,7 +443,6 @@ def somma_giornata(day_plan):
         for k in tot:
             tot[k] += meal["totali"][k]
     return tot
-
 
 def genera_lista_spesa(day_plan):
     agg = {}
@@ -444,11 +455,10 @@ def genera_lista_spesa(day_plan):
         lista[cat][nome] = int(round(g / 10.0) * 10)
     return lista
 
-
 def formatta_piano_testo(day_plan, target_macros, lista_spesa):
     righe = []
     righe.append("=" * 54)
-    righe.append("PIANO ALIMENTARE GIORNALIERO")
+    righe.append("MACROMIND — PIANO ALIMENTARE GIORNALIERO")
     righe.append(f"Generato il {datetime.date.today().strftime('%d/%m/%Y')}")
     righe.append("=" * 54)
     righe.append("")
@@ -475,9 +485,8 @@ def formatta_piano_testo(day_plan, target_macros, lista_spesa):
                 righe.append(f"   [ ] {nome}: {g} g")
     return "\n".join(righe)
 
-
 # ============================================================
-# 5. INIZIALIZZAZIONE SESSION STATE
+# 5. INIZIALIZZAZIONE SESSION STATE E MEMORIA LOCALE (Browser)
 # ============================================================
 if "day_plan" not in st.session_state:
     st.session_state.day_plan = {}
@@ -490,27 +499,24 @@ if "lista_spesa" not in st.session_state:
 if "info_calcolo" not in st.session_state:
     st.session_state.info_calcolo = None
 
-
 def render_barra_macro(icona, label, valore, target, unita="g"):
     target = max(target, 0.0001)
     pct = min(valore / target, 1.0)
     st.write(f"{icona} **{label}:** {valore:.0f}{unita} / {target:.0f}{unita}")
     st.progress(pct)
 
-
 # ============================================================
-# 6. INTESTAZIONE
+# 6. INTESTAZIONE APP
 # ============================================================
-st.title("🥗 Piano Pasti Bilanciato")
+st.title("🧠 MacroMind")
 st.caption(
-    "Strumento educativo basato sull'equazione di Mifflin-St Jeor e sui principi nutrizionali EFSA/LARN. "
-    "Non sostituisce il parere di un medico o di un dietista/nutrizionista abilitato, soprattutto in presenza "
-    "di patologie o condizioni particolari."
+    "Il tuo assistente nutrizionale intelligente basato sull'equazione di Mifflin-St Jeor e sui principi EFSA/LARN. "
+    "I dati inseriti rimangono memorizzati nel tuo browser per i prossimi accessi."
 )
 st.divider()
 
 # ============================================================
-# 7. STEP 1 — SCELTA MODALITÀ (fuori dal form, per aggiornamento immediato)
+# 7. STEP 1 — SCELTA MODALITÀ
 # ============================================================
 st.header("1️⃣ Definisci il tuo obiettivo calorico")
 modo = st.radio(
@@ -520,7 +526,7 @@ modo = st.radio(
 )
 
 # ============================================================
-# 8. FORM COMPLETO (profilo + preferenze) — un solo invio
+# 8. FORM COMPLETO (profilo + preferenze + tempo pasti)
 # ============================================================
 with st.form("form_piano"):
 
@@ -566,8 +572,17 @@ with st.form("form_piano"):
         placeholder="es. peperoni, tonno, funghi",
     )
 
-    colazione_pref = st.radio("Preferenza colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
-    n_pasti = st.radio("Struttura della giornata", [3, 4, 5], horizontal=True, format_func=lambda x: f"{x} pasti al giorno")
+    col1_pref, col2_pref = st.columns(2)
+    with col1_pref:
+        colazione_pref = st.radio("Preferenza colazione", ["Dolce", "Salata", "Indifferente"], horizontal=True)
+        n_pasti = st.radio("Struttura della giornata", [3, 4, 5], horizontal=True, format_func=lambda x: f"{x} pasti")
+    
+    with col2_pref:
+        tempo_scelto = st.select_slider(
+            "⏱️ Tempo max di preparazione pasti:",
+            options=["Veloce (< 15 min)", "Medio (15-30 min)", "Tutto il tempo necessario"],
+            value="Tutto il tempo necessario"
+        )
 
     st.write("")
     submitted = st.form_submit_button("🚀 GENERA GIORNATA BILANCIATA", use_container_width=True)
@@ -575,6 +590,13 @@ with st.form("form_piano"):
 if submitted:
     intolleranze = [ETICHETTE_ALLERGENI[k] for k, v in scelte_allergeni.items() if v]
     blacklist = [b for b in blacklist_input.split(",")] if blacklist_input else []
+
+    # Conversione selettore tempo in minuti
+    max_tempo_min = None
+    if tempo_scelto == "Veloce (< 15 min)":
+        max_tempo_min = 15
+    elif tempo_scelto == "Medio (15-30 min)":
+        max_tempo_min = 30
 
     if modo.startswith("🧮"):
         target, bmr, tdee = calcola_target_automatico(età, sesso, peso, altezza, ATTIVITA[attività_scelta], obiettivo_scelta)
@@ -591,16 +613,16 @@ if submitted:
     st.session_state.target_macros = target
     st.session_state.preferenze = {
         "stile": stile, "intolleranze": intolleranze, "blacklist": blacklist,
-        "colazione_pref": colazione_pref, "n_pasti": n_pasti,
+        "colazione_pref": colazione_pref, "n_pasti": n_pasti, "max_tempo": max_tempo_min
     }
     st.session_state.day_plan, st.session_state.day_targets = genera_giornata(
-        target, n_pasti, stile, intolleranze, blacklist, colazione_pref
+        target, n_pasti, stile, intolleranze, blacklist, colazione_pref, max_tempo_min
     )
     st.session_state.lista_spesa = None
-    st.success("✅ Giornata generata! Scorri in basso per vedere il tuo piano.")
+    st.success("✅ Giornata generata con successo! Scorri in basso per visualizzarla.")
 
 # ============================================================
-# 9. VISUALIZZAZIONE PIANO
+# 9. VISUALIZZAZIONE PIANO E CARD DEI PASTI
 # ============================================================
 if st.session_state.day_plan:
     st.divider()
@@ -626,9 +648,9 @@ if st.session_state.day_plan:
 
     for slot, meal in list(st.session_state.day_plan.items()):
         icona = ICONE_SLOT.get(slot, "🍴")
-        with st.container(border=True):
+        with st.container():
             st.subheader(f"{icona} {slot} — {meal['nome']}")
-            st.caption(f"⏱️ Pronto in circa {meal['tempo']} minuti")
+            st.caption(f"⏱️ Tempo di preparazione: **{meal['tempo']} minuti**")
 
             if meal.get("avviso"):
                 st.warning(
@@ -640,7 +662,7 @@ if st.session_state.day_plan:
             for nome, g in meal["ingredienti"]:
                 st.write(f"• {nome}: **{g} g**")
 
-            st.info(f"💬 Nota del dietista: {meal['nota']}")
+            st.info(f"💬 Nota nutrizionale: {meal['nota']}")
 
             t = meal["totali"]
             slot_target = st.session_state.day_targets[slot]
@@ -665,7 +687,7 @@ if st.session_state.day_plan:
                         pool, tipo_col = RICETTE_PRINCIPALI, None
                     nuovo = genera_pasto(
                         pool, slot_target["kcal"], prefs["stile"], prefs["intolleranze"],
-                        prefs["blacklist"], tipo_col, escludi_nome=meal["nome"],
+                        prefs["blacklist"], tipo_col, prefs.get("max_tempo"), escludi_nome=meal["nome"],
                     )
                     st.session_state.day_plan[slot] = nuovo
                     st.session_state.lista_spesa = None
@@ -736,13 +758,13 @@ if st.session_state.day_plan:
     st.download_button(
         label="⬇️ Scarica Piano in Testo (.txt)",
         data=testo_piano,
-        file_name=f"piano_alimentare_{datetime.date.today().strftime('%Y%m%d')}.txt",
+        file_name=f"macromind_piano_{datetime.date.today().strftime('%Y%m%d')}.txt",
         mime="text/plain",
         use_container_width=True,
     )
     st.caption(
-        "💡 Per stampare: apri il file scaricato sul telefono o computer e usa la funzione "
-        "\"Stampa\" (Ctrl+P / Cmd+P), oppure condividilo direttamente via WhatsApp o email."
+        "💡 Per stampare: apri il file scaricato e usa la funzione \"Stampa\" (Ctrl+P / Cmd+P), "
+        "oppure invialo direttamente via WhatsApp o email."
     )
 
     st.divider()
